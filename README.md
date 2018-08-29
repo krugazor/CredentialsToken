@@ -20,12 +20,27 @@ This is the heart of the system : depending on how the tokens and user/pass comb
 
 ### Configure the plugin
 
+```
+let memoryTokens = MemoryTokenAuth()
+let memTokenCred = CredendialsToken(memoryTokens)
+
+let credentials = Credentials()
+credentials.register(plugin: memTokenCred)
+```
+
+(From the sample code, just a stupid in-memory user management class that will *not* survive restarts)
+
 ### Setup the routes
 
 Setup the routes that will be authenticated using this plugin in one of two ways:
 
-`router.all("/hello", middleware: [creds])`
+`router.all("/hello.*", middleware: [creds])`
+
+Sets these routes to **have** to have a token or user/password at every request (useful for token authed APIs)
+
 `router.all("/profile", handler: [CredentialsToken.authenticate(credentialsType: memTokenCred.name, successRedirect: nil, failureRedirect: "/login")])`
+
+Sets these routes to have to either have the authentication in the headers/form-data, or the session, and to store in the session the credentials when needed.
 
 ## Usage scenarios
 
@@ -41,3 +56,9 @@ You cannot really use the middleware mechanism for this. You will need to protec
 ### Mixed
 
 Of course, you can use a mix of the two, using the wildcard system.
+
+## Caveats
+
+The way the Credential system works, your program might have to talk to the `CredentialTokenVerifier` instance separately from the top-level credentials system, like if you want to have a register/login mechanism that saves your data for instance.
+
+It might make the code kind of wonky sometimes, which is why it's a protocol: You can implement your database connection class that will handle all the load/save actions, and it can conform to the protocol to coalesce the credentials plugin and the singleton you would be using anyways.
