@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CredentialsToken
 
 public class InvalidIDError : Error {
     

@@ -1,4 +1,5 @@
 .DS_Store
 /.build
+Package.resolved
 /Packages
 /*.xcodeproj
