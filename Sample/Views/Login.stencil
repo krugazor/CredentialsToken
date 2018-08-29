@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login</title>
+<link rel="stylesheet" type="text/css" href="/forms.css">
+<script src="/forms.js"></script>
+</head>
+<body>
+<div id="wrapper">
+<div id="centerdiv">
+<form class="form-style-4" action="/login" method="POST">
+<label for="username">
+<span>Login</span><input type="text" name="username" />
+<label>
+<label for="password">
+<span>Password</span><input type="password" name="password" />
+</label>
+<label>
+<span>&nbsp;</span><input type="submit" value="Submit" />
+</label>
+{% if backURL %}
+<input type="hidden" name="back" value="{{ backURL }}" />
+{% endif %}
+
+</form>
+</div>
+</div>
+</body>
+</html>

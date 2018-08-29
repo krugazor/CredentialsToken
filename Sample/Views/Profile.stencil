@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login</title>
+<link rel="stylesheet" type="text/css" href="/forms.css">
+<script src="/forms.js"></script>
+</head>
+<body>
+<div id="wrapper">
+<div id="centerdiv">
+<form class="form-style-4" action="/profile" method="POST">
+<label for="username">
+<span>Login</span><input type="text" name="username" value="{{ username }}"/>
+<label>
+<label for="firstname">
+<span>First Name</span><input type="text" name="firstname" value="{{ firstname }}"/>
+<label>
+<label for="lastname">
+<span>Last Name</span><input type="text" name="lastname" value="{{ lastname }}"/>
+<label>
+<label>
+<span>&nbsp;</span><input type="submit" value="Submit" />
+</label>
+{% if backURL %}
+<input type="hidden" name="back" value="{{ backURL }}" />
+{% endif %}
+
+</form>
+<a href="/hello">Go to hello page</a>
+</div>
+</div>
+</body>
+</html>

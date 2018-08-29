@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Hello!</title>
+<link rel="stylesheet" type="text/css" href="/forms.css">
+<script src="/forms.js"></script>
+</head>
+<body>
+<div id="wrapper">
+<div id="centerdiv">
+<form class="form-style-4" action="/logout" method="POST">
+{{ userLogin }}<br/>
+<input type="hidden" name="logout" value="true" />
+<label>
+<span>&nbsp;</span><input type="submit" value="Logout" />
+</label>
+
+</button>
+</form>
+</div>
+</div>
+</body>
+</html>

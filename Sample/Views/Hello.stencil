@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Hello!</title>
+<link rel="stylesheet" type="text/css" href="/forms.css">
+<script src="/forms.js"></script>
+</head>
+<body>
+<div id="wrapper">
+<div id="centerdiv">
+<h3>Why, <span class="blinking">hello</span> there
+{% if firstName %}
+{{ firstName }} {{ lastName }}
+{% else %}
+{{ login }}
+{% endif %}
+
+!</h3>
+<a href="/profile">Go to profile page</a><br/>
+<small>what? blinking text isn't cool anymore? says who?</small>
+</div>
+</div>
+</body>
+</html>

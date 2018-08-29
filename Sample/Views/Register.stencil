@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Register</title>
+<link rel="stylesheet" type="text/css" href="/forms.css">
+<script src="/forms.js"></script>
+</head>
+<body>
+<div id="wrapper">
+<div id="centerdiv">
+<form class="form-style-4" action="/register" method="POST">
+<label for="username">
+<span>Desired Login</span><input type="text" name="username" />
+</label>
+<label for="password">
+<span>Desired Password</span><input type="password" name="password" />
+</label>
+<label>
+<span>&nbsp;</span><input type="submit" value="Submit" />
+</label>
+</form>
+</div>
+</div>
+</body>
+</html>
