@@ -90,6 +90,7 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
     }
     
     public func failureRedirectURL(for route: String) -> String? {
+        if route.contains("/api/") { return nil }
         if let back = route.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
             return "/login?back=\(back)"
         } else {

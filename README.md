@@ -34,11 +34,11 @@ credentials.register(plugin: memTokenCred)
 
 Setup the routes that will be authenticated using this plugin in one of two ways:
 
-`router.all("/hello.*", middleware: [creds])`
+`router.all("/hello.*", middleware: [credentials])`
 
 Sets these routes to **have** to have a token or user/password at every request (useful for token authed APIs)
 
-`router.all("/profile", handler: [CredentialsToken.authenticate(credentialsType: memTokenCred.name, successRedirect: nil, failureRedirect: "/login")])`
+`router.all("/profile", handler: [credentials.authenticate(credentialsType: memTokenCred.name, successRedirect: nil, failureRedirect: "/login")])`
 
 Sets these routes to have to either have the authentication in the headers/form-data, or the session, and to store in the session the credentials when needed.
 
@@ -55,7 +55,10 @@ You cannot really use the middleware mechanism for this. You will need to protec
 
 ### Mixed
 
-Of course, you can use a mix of the two, using the wildcard system.
+Of course, you can use a mix of the two, using the wildcard system. The only issue is, you *cannot* use the middleware mechanism with a redirecting plugin. If you mix the two, you will have to decide whether or not the plugin might redirect, and if so,
+
+- if the plugin redirects, you *need* to use the `handler` method
+- if the plugin does not redirect, you can use the `middleware` method
 
 ## Caveats
 

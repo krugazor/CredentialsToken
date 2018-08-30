@@ -144,5 +144,36 @@ router.get("/hello") { request, response, next in
     next()
 }
 
+router.all("/api/.*", handler:[credentials.authenticate(credentialsType: memTokenCred.name, successRedirect: nil, failureRedirect: nil)])
+router.post("/api/login") { request, response, next in
+    let fail = { try response.status(.unauthorized).end() }
+    guard let userProfile = request.userProfile else { try fail() ; return }
+    guard let userData = memoryTokens.user(for: userProfile.id, keepAlive: nil) else { try fail() ; return }
+    
+    var data = [
+        "username" : userData.login,
+        "token" : try memoryTokens.generateToken(userID: userProfile.id, keepAlive: nil)
+    ]
+    
+    if let fn = userData.firstName { data["firstName"] = fn }
+    if let ln = userData.lastName { data["lastName"] = ln }
+
+    response.send(data)
+    next()
+}
+
+router.get("/api/hello") { request, response, next in
+    let fail = { try response.status(.unauthorized).end() }
+
+    guard let userProfile = request.userProfile else { try fail() ; return }
+    guard let userData = memoryTokens.user(for: userProfile.id, keepAlive: nil) else { try fail() ; return }
+
+    var u = ( (userData.firstName != nil) ? userData.firstName! : "" ) + ( (userData.lastName != nil) ? userData.lastName! : "" )
+    if u.lengthOfBytes(using: .utf8) == 0 { u = userData.login }
+    
+    response.send("Hello \(u)")
+    next()
+}
+
 Kitura.addHTTPServer(onPort: 8080, with: router)
 Kitura.run()
