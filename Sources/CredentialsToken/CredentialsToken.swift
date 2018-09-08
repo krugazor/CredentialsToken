@@ -2,6 +2,7 @@ import Foundation
 import KituraSession
 import Credentials
 import Kitura
+import DictionaryCoding
 
 public protocol CredentialTokenVerifier  {
     associatedtype UserStructure where UserStructure : Codable
@@ -124,8 +125,8 @@ public class CredendialsToken<T>: CredentialsPluginProtocol where T : Credential
     
     // For extracting the UserStructure from the session
     public func userFromSession(_ s:SessionState) -> T.UserStructure? {
-        if let str = s[self.sessionKey] as? String, let d = str.data(using: .utf8) {
-            return try? JSONDecoder().decode(T.UserStructure.self, from: d)
+        if let d = s[self.sessionKey] as? [String:Any?] {
+            return try? DictionaryCoding().decode(T.UserStructure.self, from: d)
         }
         
         return nil
@@ -134,8 +135,8 @@ public class CredendialsToken<T>: CredentialsPluginProtocol where T : Credential
     // In case something changes in the structure and it's too heavy to reload it from the db/...
     public func updateSession(_ session:SessionState?, with: T.UserStructure) {
         if self.storeDataInSession {
-            if let ds = try? JSONEncoder().encode(with), let s = String(data: ds, encoding: .utf8) {
-                session?[self.sessionKey] = s
+            if let e = try? DictionaryCoding().encode(with), case let .dictionary(d) = e {
+                session?[self.sessionKey] = d
             }
         }
     }
