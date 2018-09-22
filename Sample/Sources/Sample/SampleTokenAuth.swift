@@ -107,5 +107,12 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
         return true
     }
     
+    // pass through
+    public func isRoutePassthrough(_ route: String) -> Bool {
+        return route.contains("pass")
+    }
 
+    public func displayNameForUnauthenticatedUser() -> String {
+        return "Lazily authenticated user"
+    }
 }

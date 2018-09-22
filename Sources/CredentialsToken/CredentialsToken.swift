@@ -4,10 +4,23 @@ import Credentials
 import Kitura
 import DictionaryCoding
 
+let IsAuthenticatedKey = "KCTIsAuthenticated"
+
+public extension UserProfile {
+    var isAuthenticated : Bool {
+        get {
+            return (self.extendedProperties[IsAuthenticatedKey] as? Bool) ?? false
+        }
+        set(v) {
+            self.extendedProperties[IsAuthenticatedKey] = v
+        }
+    }
+}
+
 public protocol CredentialTokenVerifier  {
     associatedtype UserStructure where UserStructure : Codable
     // keepAlive is a function that notifies us that the process is still going
-    
+
     func user(for id: String, keepAlive: (()->Void)?) -> UserStructure? /// returns the user data for that user ID
     func save(_ data: UserStructure, for id: String, keepAlive: (()->Void)?) /// stores the user data for that user ID
     func verifyToken(_ token: String, keepAlive: (()->Void)?) -> String? /// Returns a unique ID for the user
@@ -23,6 +36,10 @@ public protocol CredentialTokenVerifier  {
     // app key if needed
     func needsAppKey() -> Bool
     func checkAppKey(_ key: String) -> Bool
+
+    // pass through (for routes that work differently when you are authenticated)
+    func isRoutePassthrough(_ route: String) -> Bool
+    func displayNameForUnauthenticatedUser() -> String
 }
 
 public class CredendialsToken<T>: CredentialsPluginProtocol where T : CredentialTokenVerifier {
@@ -65,11 +82,6 @@ public class CredendialsToken<T>: CredentialsPluginProtocol where T : Credential
         onPass: @escaping (HTTPStatusCode?, [String : String]?) -> Void,
         inProgress: @escaping () -> Void) {
         
-        if let u = request.userProfile {
-            onSuccess(u) // already done?
-            return
-        }
-        
         let fail = {
             if self.tokenVerifier.shouldRedirect() { onPass(nil,nil) }
             else { onFailure(HTTPStatusCode.unauthorized, nil) }
@@ -87,8 +99,10 @@ public class CredendialsToken<T>: CredentialsPluginProtocol where T : Credential
                     self.updateSession(request.session, with: user)
                 }
             }
-            
-            onSuccess(UserProfile(id: userID, displayName: userID, provider: self.name))
+
+            let profile = UserProfile(id: userID, displayName: userID, provider: self.name)
+            profile.isAuthenticated = true
+            onSuccess(profile)
         } else if let r = request.body?.asURLEncoded,
             let user = r[self.userNameField],
             let pass = r[self.passwordField],
@@ -98,9 +112,18 @@ public class CredendialsToken<T>: CredentialsPluginProtocol where T : Credential
                     self.updateSession(request.session, with: user)
                 }
             }
-            onSuccess(UserProfile(id: userID, displayName: userID, provider: self.name))
+
+            let profile = UserProfile(id: userID, displayName: userID, provider: self.name)
+            profile.isAuthenticated = true
+            onSuccess(profile)
+        } else if let u = request.userProfile {
+            onSuccess(u) // already done?
         } else {
-            if self.self.tokenVerifier.shouldRedirect() {
+            if self.tokenVerifier.isRoutePassthrough(request.matchedPath) {
+                let profile = UserProfile(id: UUID().uuidString, displayName: self.tokenVerifier.displayNameForUnauthenticatedUser(), provider: self.name)
+                profile.isAuthenticated = false
+                onSuccess(profile)
+            } else if self.tokenVerifier.shouldRedirect() {
                 if let url = self.tokenVerifier.failureRedirectURL(for: request.matchedPath) {
                     try? response.redirect(url).end()
                     onPass(.temporaryRedirect, nil)
