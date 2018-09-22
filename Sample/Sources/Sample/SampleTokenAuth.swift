@@ -85,7 +85,7 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
         return Date.distantFuture
     }
     
-    public func shouldRedirect() -> Bool {
+    public var shouldRedirect : Bool {
         return true
     }
     
@@ -99,7 +99,7 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
     }
     
     // App Key
-    public func needsAppKey() -> Bool {
+    public var needsAppKey : Bool {
         return false
     }
     
@@ -108,6 +108,10 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
     }
     
     // pass through
+    public var hasPassthroughRoutes : Bool {
+        return true
+    }
+
     public func isRoutePassthrough(_ route: String) -> Bool {
         return route.contains("pass")
     }
