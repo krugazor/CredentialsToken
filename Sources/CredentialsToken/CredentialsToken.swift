@@ -30,14 +30,15 @@ public protocol CredentialTokenVerifier  {
     func expireDate(for id: String, keepAlive: (()->Void)?) -> Date? /// Expire date for the token
     
     // redirection for web forms etc or not
-    func shouldRedirect() -> Bool
+    var shouldRedirect : Bool { get }
     func failureRedirectURL(for route: String) -> String?
     
     // app key if needed
-    func needsAppKey() -> Bool
+    var needsAppKey : Bool { get }
     func checkAppKey(_ key: String) -> Bool
 
     // pass through (for routes that work differently when you are authenticated)
+    var hasPassthroughRoutes : Bool { get }
     func isRoutePassthrough(_ route: String) -> Bool
     func displayNameForUnauthenticatedUser() -> String
 }
@@ -45,7 +46,7 @@ public protocol CredentialTokenVerifier  {
 public class CredendialsToken<T>: CredentialsPluginProtocol where T : CredentialTokenVerifier {
     public let name: String = "XToken"
     public var usersCache: NSCache<NSString, BaseCacheElement>?
-    public var redirecting: Bool { return self.tokenVerifier.shouldRedirect() }
+    public var redirecting: Bool { return self.tokenVerifier.shouldRedirect }
     
     // variables to look for in the headers / post data
     public var userNameField : String
@@ -83,11 +84,11 @@ public class CredendialsToken<T>: CredentialsPluginProtocol where T : Credential
         inProgress: @escaping () -> Void) {
         
         let fail = {
-            if self.tokenVerifier.shouldRedirect() { onPass(nil,nil) }
+            if self.tokenVerifier.shouldRedirect { onPass(nil,nil) }
             else { onFailure(HTTPStatusCode.unauthorized, nil) }
         }
         
-        if self.tokenVerifier.needsAppKey() {
+        if self.tokenVerifier.needsAppKey {
             guard let key = request.headers[self.appKey] else { fail() ; return }
             if !self.tokenVerifier.checkAppKey(key) { fail() ; return }
         }
@@ -116,23 +117,34 @@ public class CredendialsToken<T>: CredentialsPluginProtocol where T : Credential
             let profile = UserProfile(id: userID, displayName: userID, provider: self.name)
             profile.isAuthenticated = true
             onSuccess(profile)
-        } else if let u = request.userProfile {
-            onSuccess(u) // already done?
-        } else {
+        } else if self.tokenVerifier.hasPassthroughRoutes {
             if self.tokenVerifier.isRoutePassthrough(request.matchedPath) {
-                let profile = UserProfile(id: UUID().uuidString, displayName: self.tokenVerifier.displayNameForUnauthenticatedUser(), provider: self.name)
-                profile.isAuthenticated = false
-                onSuccess(profile)
-            } else if self.tokenVerifier.shouldRedirect() {
-                if let url = self.tokenVerifier.failureRedirectURL(for: request.matchedPath) {
-                    try? response.redirect(url).end()
-                    onPass(.temporaryRedirect, nil)
+                if let u = request.userProfile {
+                    onSuccess(u) // already done?
                 } else {
-                    fail()
+                    let profile = UserProfile(id: UUID().uuidString, displayName: self.tokenVerifier.displayNameForUnauthenticatedUser(), provider: self.name)
+                    profile.isAuthenticated = false
+                    onSuccess(profile)
                 }
             } else {
-                fail()
+                if let u = request.userProfile {
+                    if u.isAuthenticated { onSuccess (u) }
+                    else { fail() }
+                } else {
+                    if self.tokenVerifier.shouldRedirect {
+                        if let url = self.tokenVerifier.failureRedirectURL(for: request.matchedPath) {
+                            try? response.redirect(url).end()
+                            onPass(.temporaryRedirect, nil)
+                        } else {
+                            fail()
+                        }
+                    } else {
+                        fail()
+                    }
+                }
             }
+        } else {
+            fail()
         }
     }
 

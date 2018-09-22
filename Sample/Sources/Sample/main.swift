@@ -25,7 +25,7 @@ memTokenCred.storeDataInSession = true
 credentials.register(plugin: memTokenCred)
 
 router.get("/login") { request, response, next in
-    if let s = request.session, let u = memTokenCred.userFromSession(s) {
+    if let s = request.session, let u = memTokenCred.userFromSession(s), request.userProfile?.isAuthenticated ?? false {
         try response.render("Logout.stencil", context: ["userLogin" : u.login])
     } else {
         var c = [String:Any]()
@@ -41,13 +41,14 @@ router.get("/login") { request, response, next in
 
 router.post("/login", handler:[credentials.authenticate(credentialsType: memTokenCred.name, successRedirect: nil, failureRedirect: "/login")])
 router.post("/login") { request, response, next in
-    if let _ = request.userProfile {
+    if let u = request.userProfile, u.isAuthenticated {
         if let back = request.body?.asURLEncoded?["back"] {
             try response.redirect(back)
         } else {
             try response.redirect("/hello")
         }
     }
+    next()
 }
 
 router.post("/logout") { request, response, next in
@@ -58,7 +59,7 @@ router.post("/logout") { request, response, next in
 }
 
 router.get("/register") { request, response, next in
-    if let s = request.session, let u = memTokenCred.userFromSession(s) {
+    if let s = request.session, let u = memTokenCred.userFromSession(s), request.userProfile?.isAuthenticated ?? false {
         try response.render("Logout.stencil", context: ["userLogin" : u.login])
     } else {
         try response.render("Register.stencil", context: [:])
@@ -98,7 +99,11 @@ router.post("/register") {request, response, next in
 router.all("/profile", handler: [credentials.authenticate(credentialsType: memTokenCred.name, successRedirect: nil, failureRedirect: "/login")])
 router.get("/profile") { request, response, next in
     if let s = request.session, let u = memTokenCred.userFromSession(s) {
-        try response.render("Profile.stencil", context: ["username" : u.login, "firstname": u.firstName ?? "", "lastname":u.lastName ?? ""])
+        if request.userProfile?.isAuthenticated ?? false {
+            try response.render("Profile.stencil", context: ["username": u.login, "firstname": u.firstName ?? "", "lastname": u.lastName ?? ""])
+        } else {
+            try response.redirect("/login")
+        }
     }
     next()
 }
@@ -132,12 +137,14 @@ router.get("/helloToken") { request, response, next in
 }
 
 router.get("/hello") { request, response, next in
-    if let s = request.session {
+    if let s = request.session, request.userProfile?.isAuthenticated ?? false {
         if let u = memTokenCred.userFromSession(s) {
             try response.render("Hello.stencil", with: u)
         } else {
             response.send("no user in session")
         }
+    } else if let p = request.userProfile, !p.isAuthenticated {
+        try response.redirect("/login?back=/hello")
     } else {
         response.send("no session")
     }
