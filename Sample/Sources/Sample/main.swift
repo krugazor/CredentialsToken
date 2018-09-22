@@ -175,5 +175,31 @@ router.get("/api/hello") { request, response, next in
     next()
 }
 
+router.get("/api/hellopassthrough") { request, response, next in
+    if let userProfile = request.userProfile {
+        if userProfile.isAuthenticated {
+            guard let userData = memoryTokens.user(for: userProfile.id, keepAlive: nil) else {
+                response.send("hello problematic user!")
+                next()
+                return
+            }
+
+            var u = ((userData.firstName != nil) ? userData.firstName! : "") + ((userData.lastName != nil) ? userData.lastName! : "")
+            if u.lengthOfBytes(using: .utf8) == 0 {
+                u = userData.login
+            }
+
+            response.send("Hello \(u)!")
+        } else {
+            let u = userProfile.displayName
+            response.send("Hello \(u)!")
+        }
+    } else { // we're not authenticated AND have no session
+        response.send("Hello new user!")
+    }
+
+    next()
+}
+
 Kitura.addHTTPServer(onPort: 8080, with: router)
 Kitura.run()
