@@ -27,11 +27,11 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
     public typealias UserStructure = User
     private var memory = [String:(user: User, tokens: [String])]() // stupid token implementation, no expiry
     
-   public func user(for id: String, keepAlive: (() -> Void)?) -> User? {
+    public func user(for id: String, app: String? = nil, keepAlive: (() -> Void)?) -> User? {
         return memory[id]?.user
     }
     
-    public func save(_ data: User, for id: String, keepAlive: (() -> Void)?) {
+    public func save(_ data: User, for id: String, app: String? = nil, keepAlive: (() -> Void)?) {
         if let oldData = memory[id] {
             let newData = (data, oldData.tokens)
             memory[id] = newData
@@ -40,7 +40,7 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
         }
     }
     
-    public func verifyToken(_ token: String, keepAlive: (() -> Void)?) -> String? {
+    public func verifyToken(_ token: String, app: String? = nil, keepAlive: (() -> Void)?) -> String? {
         let matches = memory.filter { (k,v) -> Bool in
             return v.tokens.contains(token)
         }
@@ -48,7 +48,7 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
         return matches.first?.key
     }
     
-    public func registerUser(name: String, password: String, keepAlive: (() -> Void)?) throws -> String {
+    public func registerUser(name: String, password: String, app: String? = nil, keepAlive: (() -> Void)?) throws -> String {
         let matches = memory.filter { (k,v) -> Bool in
             return v.user.login == name
         }
@@ -63,7 +63,7 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
         
         return tok
     }
-    public func verifyUser(name: String, password: String, keepAlive: (() -> Void)?) -> String? {
+    public func verifyUser(name: String, password: String, app: String? = nil, keepAlive: (() -> Void)?) -> String? {
         let hash = password.digest(using: .sha512)
         let matches = memory.filter { (k,v) -> Bool in
             return (v.user.login == name && v.user.hashedPassword == hash)
@@ -72,7 +72,7 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
         return matches.first?.key
     }
     
-    public func generateToken(userID: String, keepAlive: (() -> Void)?) throws -> String {
+    public func generateToken(userID: String, app: String? = nil, keepAlive: (() -> Void)?) throws -> String {
         guard let _ = memory[userID] else { throw InvalidIDError() }
         
         let tok = UUID().uuidString
@@ -81,7 +81,7 @@ public class MemoryTokenAuth : CredentialTokenVerifier {
         return tok
     }
     
-    public func expireDate(for: String, keepAlive: (() -> Void)?) -> Date? {
+    public func expireDate(for: String, app: String? = nil, keepAlive: (() -> Void)?) -> Date? {
         return Date.distantFuture
     }
     

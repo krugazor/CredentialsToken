@@ -21,13 +21,13 @@ public protocol CredentialTokenVerifier  {
     associatedtype UserStructure where UserStructure : Codable
     // keepAlive is a function that notifies us that the process is still going
 
-    func user(for id: String, keepAlive: (()->Void)?) -> UserStructure? /// returns the user data for that user ID
-    func save(_ data: UserStructure, for id: String, keepAlive: (()->Void)?) /// stores the user data for that user ID
-    func verifyToken(_ token: String, keepAlive: (()->Void)?) -> String? /// Returns a unique ID for the user
-    func registerUser(name: String, password: String, keepAlive: (()->Void)?) throws -> String /// Returns a unique ID for the user
-    func verifyUser(name: String, password: String, keepAlive: (()->Void)?) -> String? /// Returns a unique ID for the user
-    func generateToken(userID: String, keepAlive: (()->Void)?) throws -> String /// Generates a token, throws if the user id is invalid
-    func expireDate(for id: String, keepAlive: (()->Void)?) -> Date? /// Expire date for the token
+    func user(for id: String, app: String?, keepAlive: (()->Void)?) -> UserStructure? /// returns the user data for that user ID
+    func save(_ data: UserStructure, for id: String, app: String?, keepAlive: (()->Void)?) /// stores the user data for that user ID
+    func verifyToken(_ token: String, app: String?, keepAlive: (()->Void)?) -> String? /// Returns a unique ID for the user
+    func registerUser(name: String, password: String, app: String?, keepAlive: (()->Void)?) throws -> String /// Returns a unique ID for the user
+    func verifyUser(name: String, password: String, app: String?, keepAlive: (()->Void)?) -> String? /// Returns a unique ID for the user
+    func generateToken(userID: String, app: String?, keepAlive: (()->Void)?) throws -> String /// Generates a token, throws if the user id is invalid
+    func expireDate(for id: String, app: String?, keepAlive: (()->Void)?) -> Date? /// Expire date for the token
     
     // redirection for web forms etc or not
     var shouldRedirect : Bool { get }
@@ -88,15 +88,17 @@ public class CredendialsToken<T>: CredentialsPluginProtocol where T : Credential
             else { onFailure(HTTPStatusCode.unauthorized, nil) }
         }
         
+        var appKey: String? = nil
         if self.tokenVerifier.needsAppKey {
             guard let key = request.headers[self.appKey] else { fail() ; return }
             if !self.tokenVerifier.checkAppKey(key) { fail() ; return }
+            appKey = key
         }
         
         if let token = request.headers[self.tokenHeaderName],
-            let userID = self.tokenVerifier.verifyToken(token, keepAlive: inProgress) {
+            let userID = self.tokenVerifier.verifyToken(token, app: appKey, keepAlive: inProgress) {
             if self.storeDataInSession {
-                if let user = self.tokenVerifier.user(for: userID, keepAlive: inProgress){
+                if let user = self.tokenVerifier.user(for: userID, app: appKey, keepAlive: inProgress){
                     self.updateSession(request.session, with: user)
                 }
             }
@@ -107,9 +109,9 @@ public class CredendialsToken<T>: CredentialsPluginProtocol where T : Credential
         } else if let r = request.body?.asURLEncoded,
             let user = r[self.userNameField],
             let pass = r[self.passwordField],
-            let userID = self.tokenVerifier.verifyUser(name: user, password: pass, keepAlive: inProgress) {
+            let userID = self.tokenVerifier.verifyUser(name: user, password: pass, app: appKey, keepAlive: inProgress) {
             if self.storeDataInSession {
-                if let user = self.tokenVerifier.user(for: userID, keepAlive: inProgress) {
+                if let user = self.tokenVerifier.user(for: userID, app: appKey, keepAlive: inProgress) {
                     self.updateSession(request.session, with: user)
                 }
             }
@@ -150,7 +152,11 @@ public class CredendialsToken<T>: CredentialsPluginProtocol where T : Credential
 
     // For session storing after (for example) register actions etc
     public func loginSession( request: RouterRequest, response: RouterResponse, userID: String) throws {
-        if let user = self.tokenVerifier.user(for: userID, keepAlive: nil) {
+        var appKey: String? = nil
+        if self.tokenVerifier.needsAppKey {
+            appKey = request.headers[self.appKey]
+        }
+        if let user = self.tokenVerifier.user(for: userID, app: appKey, keepAlive: nil) {
             if self.storeDataInSession {
                 self.updateSession(request.session, with: user)
             }
